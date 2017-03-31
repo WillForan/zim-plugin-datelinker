@@ -37,6 +37,10 @@ from zim.gui.clipboard import Clipboard, SelectionClipboard
 from zim.gui.notebookdialog import NotebookComboBox
 from zim.templates import get_template
 
+# get current page
+#from zim.history import get_current
+import zim.history
+
 
 import logging
 
@@ -64,6 +68,7 @@ class MainWindowExtension(WindowExtension):
 				<menu action='tools_menu'>
 					<placeholder name='plugin_items'>
 						<menuitem action='now_button_clicked'/>
+					        <menuitem action='path_to_clip'/>
 					</placeholder>
 				</menu>
 			</menubar>
@@ -77,8 +82,20 @@ class MainWindowExtension(WindowExtension):
 
 	def __init__(self, plugin, window):
 		WindowExtension.__init__(self, plugin, window)
+                self._preferences = plugin.preferences
 		#self.notebookcombobox = NotebookComboBox(current='file:///home/robert/Notebooks/Primary')
 		#self.notebookcombobox.connect('changed', self.on_notebook_changed)
+
+
+	def get_cur_path(self,aslink=True):
+                pathname = self.window.ui.history.get_current().name 
+                if aslink:  pathname = '[[' + pathname + ']]'
+                return(pathname)
+
+	@action(_('PathToClipboard'),accelerator = '<Control><Shift>Y') # T: menu item
+	def path_to_clip(self):
+		curpagelink =  self.get_cur_path(False)
+                gtk.Clipboard().set_text(curpagelink)
 
 	@action(
 		_('Log Entry'),
@@ -87,31 +104,62 @@ class MainWindowExtension(WindowExtension):
 		accelerator = '<Control><Shift>E'
 	) # T: menu item
 	def now_button_clicked(self):
-
-		offset_time=datetime.today()-timedelta(hours=hours_past_midnight)
-		name=offset_time.strftime(':Journal:%Y:%m:%d');
-
-		text = '\n' + strftime('%I:%M%p - ').lower();
-
+                #raise Exception(self._preferences)
 		#ui = self.__get_ui()
 		#ui = ServerProxy().get_notebook(notebookFileUri)
 		#ui = self.window.ui.notebook;
 		ui = self.window.ui
-		path=ui.notebook.resolve_path(name);
+
+		offset_time=datetime.today()-timedelta(hours=hours_past_midnight)
+
+                # find the calendar plugin instantiated by zim
+                calplug = [  
+                  x[0] for x in self.window.ui.plugins._connected_signals.values() 
+                  if "CalendarPlugin" in str(type(x[0]()))
+                ]
+
+                # if we didn't find the plugin, it's not loaded
+                # we could default to some deafult path template (coded but never reached)
+                if(len(calplug)<=0):
+                    raise Exception("enable Journal plugin")
+                    # or we could just make up a date path
+		    name=offset_time.strftime(':Calendar:%Y:Week %W');
+		    path=ui.notebook.resolve_path(name);
+                else:
+                    # get the actual plugin (assume there is only one plugin matching the string 'CalendarPlugin')
+                    calplug = calplug[0]()
+                    # use calendar plugin to get the path
+                    path = calplug.path_from_date(offset_time)
+
+
+                # get page from path
 		page=ui.notebook.get_page(path);
+
+                # make the text to add to the current date page
+                # includes where we came from and the current time
+
+		#text = '\n' + strftime('%I:%M%p - ').lower();
+		curpagelink = self.get_cur_path()
+		curtime     = strftime('%I:%M%p - ').lower();
+		text = '\n' + curpagelink + ' - ' + curtime;
+
 
 		#ui.append_text_to_page(path, text)
 
+                # create the current date page if we dont already have it
 		if not page.exists():
 			parsetree = ui.notebook.get_template(page)
 			page.set_parsetree(parsetree)
 		
-		page.parse('wiki', text, append=True) # FIXME format hard coded ??? (this FIXME was copied from gui.__init__)
+                # go to that page
+                # FIXME format hard coded ??? (this FIXME was copied from gui.__init__)
+		page.parse('wiki', text, append=True)
 		ui.present(path)
 		ui.notebook.store_page(page);
 
 		# Move the cursor to the end of the line that was just appended...
 		textBuffer = self.window.pageview.view.get_buffer();
+                print(type(textBuffer))
 		i = textBuffer.get_end_iter();
 		i.backward_visible_cursor_positions(1);
 		textBuffer.place_cursor(i);
