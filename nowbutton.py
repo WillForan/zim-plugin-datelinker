@@ -25,12 +25,10 @@ from datetime import date as dateclass
 
 # TODO: kern out unneccesary imports
 from zim.plugins import PluginClass, WindowExtension, extends
-from zim.command import Command
 from zim.actions import action
 from zim.config import data_file, ConfigManager
-from zim.notebook import Notebook, PageNameError, NotebookInfo, \
+from zim.notebook import Notebook,  NotebookInfo, \
 	resolve_notebook, build_notebook
-from zim.ipc import start_server_if_not_running, ServerProxy
 from zim.gui.widgets import Dialog, ScrolledTextView, IconButton, \
 	InputForm, gtk_window_set_default_icon, QuestionDialog
 from zim.gui.clipboard import Clipboard, SelectionClipboard
@@ -104,10 +102,6 @@ class MainWindowExtension(WindowExtension):
 		accelerator = '<Control><Shift>E'
 	) # T: menu item
 	def now_button_clicked(self):
-                #raise Exception(self._preferences)
-		#ui = self.__get_ui()
-		#ui = ServerProxy().get_notebook(notebookFileUri)
-		#ui = self.window.ui.notebook;
 		ui = self.window.ui
 
 		offset_time=datetime.today()-timedelta(hours=hours_past_midnight)
@@ -167,13 +161,6 @@ class MainWindowExtension(WindowExtension):
 		# and finally... scroll the window all the way to the bottom.
 		self.window.pageview.scroll_cursor_on_screen();
 
-	def _get_ui(self):
-		start_server_if_not_running()
-		notebook = self.notebookcombobox.get_notebook()
-		if notebook:
-			return ServerProxy().get_notebook(notebook)
-		else:
-			return None
 
 	def on_notebook_changed(self):
 		return None
