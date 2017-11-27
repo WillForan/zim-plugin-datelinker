@@ -178,10 +178,13 @@ class MainWindowExtension(WindowExtension):
                 # make the text to add to the current date page
                 # includes where we came from and the current time
 
+                # TODO: dont hardcode
 		#text = '\n' + strftime('%I:%M%p - ').lower();
 		curpagelink = self.get_cur_path()
-		curtime     = strftime('%I:%M%p - ').lower();
-                text = '\n' + curpagelink + ' - ' + curtime;
+		curtime     = strftime('%I:%M%p - ').lower()
+                text = '\n' + curpagelink + ' - ' + curtime
+                # no link version for xml insert
+		curpagelink = self.get_cur_path(aslink=False)
 
 
 		#ui.append_text_to_page(path, text)
@@ -198,7 +201,6 @@ class MainWindowExtension(WindowExtension):
                 textBuffer = self.window.pageview.view.get_buffer()
                 itr = find_date_heading(textBuffer)
                 if itr is not None:
-		    curpagelink = self.get_cur_path(aslink=False)
                     el = get_link_and_text(curpagelink, curpagelink, ' - @\n')
                     textBuffer.insert_parsetree(itr, el)
                     textBuffer.place_cursor(itr)
