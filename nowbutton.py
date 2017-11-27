@@ -23,6 +23,9 @@ import gtk
 from datetime import datetime, timedelta
 from datetime import date as dateclass
 
+# used for inserting buffer, instead of parse(append=True)
+from zim.formats import ParseTree
+
 # TODO: kern out unneccesary imports
 from zim.plugins import PluginClass, WindowExtension, extends
 from zim.actions import action
@@ -67,6 +70,7 @@ class MainWindowExtension(WindowExtension):
 					<placeholder name='plugin_items'>
 						<menuitem action='now_button_clicked'/>
 					        <menuitem action='path_to_clip'/>
+					        <menuitem action='quick_date_insert'/>
 					</placeholder>
 				</menu>
 			</menubar>
@@ -84,58 +88,95 @@ class MainWindowExtension(WindowExtension):
 		#self.notebookcombobox = NotebookComboBox(current='file:///home/robert/Notebooks/Primary')
 		#self.notebookcombobox.connect('changed', self.on_notebook_changed)
 
+        def get_cur_path(self, aslink=True):
+            pathname = ':' + self.window.ui.history.get_current().name
+            if aslink:
+                pathname = '[[' + pathname + ']]'
+            return(pathname)
 
-	def get_cur_path(self,aslink=True):
-                pathname = self.window.ui.history.get_current().name 
-                if aslink:  pathname = '[[' + pathname + ']]'
-                return(pathname)
+        def get_current_day_page(self):
+            ui = self.window.ui
+            offset_time = datetime.today()-timedelta(hours=hours_past_midnight)
 
-	@action(_('PathToClipboard'),accelerator = '<Control><Shift>Y') # T: menu item
-	def path_to_clip(self):
-		curpagelink =  self.get_cur_path(False)
+            # find the calendar/jounal plugin
+            plugins = self.window.ui.plugins._connected_signals.values()
+            calplug = [
+                    x[0] for x in plugins
+                    if "CalendarPlugin" in str(type(x[0]()))
+                    ]
+
+            # if we didn't find the plugin, it's not loaded
+            # we could default to some deafult path template 
+            # (coded but never reached)
+            if(len(calplug) <= 0):
+                raise Exception("enable Journal plugin")
+                # or we could just make up a date path
+                name = offset_time.strftime(':Calendar:%Y:Week %W')
+                path = ui.notebook.resolve_path(name)
+            else:
+                # get the actual plugin
+                # assume there is only one plugin matching 'CalendarPlugin'
+                calplug = calplug[0]()
+                # use calendar plugin to get the path
+                path = calplug.path_from_date(offset_time)
+
+            return(path)
+
+        @action(('QuickDateInsert'), accelerator='<Control><Shift>D')  # T: menu item
+        def quick_date_insert(self):
+            """
+            insert link to date as [yyyy-mm-dd]
+            without gui popup of Control+D
+            also adds ':' to front of link
+            """
+            # xml for linked date
+            # like [d: yyyy-mm-dd]
+            datelink_xml = """<?xml version='1.0' encoding='utf-8'?><zim-tree partial="True"><link href=":%(path)s">[d: %(disp)s]</link></zim-tree>"""
+            dispdict = {
+                    'path': self.get_current_day_page(),
+                    'disp': strftime('%Y-%m-%d')}
+            datelink = ParseTree().fromstring(datelink_xml % dispdict)
+
+            # insert it
+            # cribbed from plugins/linesorter.py
+            buffer = self.window.pageview.view.get_buffer()
+            buffer.insert_parsetree_at_cursor(datelink)
+
+            # quicknote method
+            # ui = self.window.ui
+            # page = ui.notebook.get_page(self.window.ui.history.get_current())
+            # page.parse('wiki', text, append=True)
+
+        @action(('PathToClipboard'), accelerator='<Control><Shift>Y')  # T: menu item
+        def path_to_clip(self):
+                """
+                this is the same as Control-Shit-L
+                but it wont auto link on paste
+                """
+                curpagelink = self.get_cur_path(False)
                 gtk.Clipboard().set_text(curpagelink)
 
 	@action(
-		_('Log Entry'),
+		('Log Entry'),
 		stock=gtk.STOCK_JUMP_TO,
 		readonly=True,
-		accelerator = '<Control><Shift>E'
-	) # T: menu item
+		accelerator='<Control><Shift>E'
+	)  # T: menu item
 	def now_button_clicked(self):
 		ui = self.window.ui
 
-		offset_time=datetime.today()-timedelta(hours=hours_past_midnight)
+                # get page from path
+                calpath = self.get_current_day_page()
+                page = ui.notebook.get_page(calpath)
 
                 # find the calendar plugin instantiated by zim
-                calplug = [  
-                  x[0] for x in self.window.ui.plugins._connected_signals.values() 
-                  if "CalendarPlugin" in str(type(x[0]()))
-                ]
-
-                # if we didn't find the plugin, it's not loaded
-                # we could default to some deafult path template (coded but never reached)
-                if(len(calplug)<=0):
-                    raise Exception("enable Journal plugin")
-                    # or we could just make up a date path
-		    name=offset_time.strftime(':Calendar:%Y:Week %W');
-		    path=ui.notebook.resolve_path(name);
-                else:
-                    # get the actual plugin (assume there is only one plugin matching the string 'CalendarPlugin')
-                    calplug = calplug[0]()
-                    # use calendar plugin to get the path
-                    path = calplug.path_from_date(offset_time)
-
-
-                # get page from path
-		page=ui.notebook.get_page(path);
-
                 # make the text to add to the current date page
                 # includes where we came from and the current time
 
 		#text = '\n' + strftime('%I:%M%p - ').lower();
 		curpagelink = self.get_cur_path()
 		curtime     = strftime('%I:%M%p - ').lower();
-		text = '\n' + curpagelink + ' - ' + curtime;
+                text = '\n' + curpagelink + ' - ' + curtime;
 
 
 		#ui.append_text_to_page(path, text)
@@ -148,7 +189,7 @@ class MainWindowExtension(WindowExtension):
                 # go to that page
                 # FIXME format hard coded ??? (this FIXME was copied from gui.__init__)
 		page.parse('wiki', text, append=True)
-		ui.present(path)
+		ui.present(calpath)
 		ui.notebook.store_page(page);
 
 		# Move the cursor to the end of the line that was just appended...
