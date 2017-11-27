@@ -12,7 +12,7 @@
 # will be considered "the same day" (for purposes of selecting the journal page). To be most
 # effective, it should be the time that you are "most surely asleep". Small for early risers, larger
 # for night-owls. For example, a value of '4' would imply that the new day/page starts at '4am'.
-hours_past_midnight=4
+hours_past_midnight = 4
 
 # ----------------------
 
@@ -25,6 +25,10 @@ from datetime import date as dateclass
 
 # used for inserting buffer, instead of parse(append=True)
 from zim.formats import ParseTree
+
+# finding header (copied from plugins/tableofcontents.py)
+import re
+from zim.gui.pageview import FIND_REGEX, _is_heading_tag
 
 # TODO: kern out unneccesary imports
 from zim.plugins import PluginClass, WindowExtension, extends
@@ -41,8 +45,6 @@ from zim.templates import get_template
 # get current page
 #from zim.history import get_current
 import zim.history
-
-
 import logging
 
 logger = logging.getLogger('zim.plugins.nowbutton')
@@ -122,6 +124,8 @@ class MainWindowExtension(WindowExtension):
 
             return(path)
 
+
+
         @action(('QuickDateInsert'), accelerator='<Control><Shift>D')  # T: menu item
         def quick_date_insert(self):
             """
@@ -131,11 +135,12 @@ class MainWindowExtension(WindowExtension):
             """
             # xml for linked date
             # like [d: yyyy-mm-dd]
-            datelink_xml = """<?xml version='1.0' encoding='utf-8'?><zim-tree partial="True"><link href=":%(path)s">[d: %(disp)s]</link></zim-tree>"""
-            dispdict = {
-                    'path': self.get_current_day_page(),
-                    'disp': strftime('%Y-%m-%d')}
-            datelink = ParseTree().fromstring(datelink_xml % dispdict)
+            #datelink_xml = """<?xml version='1.0' encoding='utf-8'?><zim-tree partial="True"><link href=":%(path)s">[d: %(disp)s]</link></zim-tree>"""
+            #dispdict = {
+            #        'path': self.get_current_day_page(),
+            #        'disp': strftime('%Y-%m-%d')}
+            #datelink = ParseTree().fromstring(datelink_xml % dispdict)
+            datelink = get_link_and_text(self.get_current_day_page(), strftime('[d: %Y-%m-%d]'))
 
             # insert it
             # cribbed from plugins/linesorter.py
@@ -186,25 +191,79 @@ class MainWindowExtension(WindowExtension):
 			parsetree = ui.notebook.get_template(page)
 			page.set_parsetree(parsetree)
 		
-                # go to that page
-                # FIXME format hard coded ??? (this FIXME was copied from gui.__init__)
-		page.parse('wiki', text, append=True)
-		ui.present(calpath)
-		ui.notebook.store_page(page);
+                # # go to date page and insert
+                # either right after the date heading
+                # or at the end of the page if we cannot find date
+                ui.present(calpath)
+                textBuffer = self.window.pageview.view.get_buffer()
+                itr = find_date_heading(textBuffer)
+                if itr is not None:
+		    curpagelink = self.get_cur_path(aslink=False)
+                    el = get_link_and_text(curpagelink, curpagelink, ' - @\n')
+                    textBuffer.insert_parsetree(itr, el)
+                    textBuffer.place_cursor(itr)
+                else:
+                    page.parse('wiki', text, append=True)
+                    ui.notebook.store_page(page)
 
-		# Move the cursor to the end of the line that was just appended...
-		textBuffer = self.window.pageview.view.get_buffer();
-                print(type(textBuffer))
-		i = textBuffer.get_end_iter();
-		i.backward_visible_cursor_positions(1);
-		textBuffer.place_cursor(i);
+                    # Move the cursor to the end of the line that was just appended...
+                    i = textBuffer.get_end_iter()
+                    i.backward_visible_cursor_positions(1)
+                    textBuffer.place_cursor(i)
 
-		# and finally... scroll the window all the way to the bottom.
-		self.window.pageview.scroll_cursor_on_screen();
+                    # and finally... scroll the window all the way to the bottom.
+                    self.window.pageview.scroll_cursor_on_screen()
 
 
 	def on_notebook_changed(self):
 		return None
 		
 
+def get_link_and_text(path, linktxt, text=''):
+    """
+    build a partial zim tree with a link and some text
+    @param path  what to link to
+    @param linktxt what to show for link
+    @param text extra text after link
+    """
+    xml = """<?xml version='1.0' encoding='utf-8'?>""" + \
+          """<zim-tree partial="True">""" + \
+          '<link href=":%(path)s">%(disp)s</link>%(text)s </zim-tree>'
+    dispdict = {'path': path, 'disp': linktxt, 'text': text}
+    zimtree = ParseTree().fromstring(xml % dispdict)
+    return(zimtree)
+
+
+# shamelessly copied from tableofcontents plugin
+_is_heading = lambda iter: bool(filter(_is_heading_tag, iter.get_tags()))
+
+
+def find_date_heading(buffer):
+    '''Find a heading
+    @param buffer: the C{gtk.TextBuffer}
+    @returns: a C{gtk.TextIter} for cursor at end of header or C{None}
+    '''
+    today = strftime("%A %0d %B")
+    regex = "^%s$" % re.escape(today)
+    with buffer.tmp_cursor():
+        if buffer.finder.find(regex, FIND_REGEX):
+            iter = buffer.get_insert_iter()
+            start = iter.get_offset()
+        else:
+            return None
+
+        while not _is_heading(iter):
+            if buffer.finder.find_next():
+                iter = buffer.get_insert_iter()
+                if iter.get_offset() == start:
+                    return None  # break infinite loop
+            else:
+                return None
+
+        if _is_heading(iter):
+            start, end = buffer.get_line_bounds(iter.get_line())
+            return end
+
+        else:
+            return None
 
