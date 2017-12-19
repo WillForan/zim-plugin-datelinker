@@ -4,25 +4,40 @@ Super-easy way to make a timestamped log entries in the [Zim wiki](http://zim-wi
 
 This is a plugin only. This is not zim.
 
-## Plugin
-When this new button is clicked or the hotkey (Ctrl+Shift+E) pressed, the following happens:
-* If the current day's journal page does not exist, it is created. **The Journal plugin must be enabled.**
-* The window is navigated to today's journal page.
-* The page's text has the a link to previous page and current time appended to it (e.g. "\n[[Page:IWas:Editting]] - 04:52pm - ")
-   * if date page is week, text is placed after date header (e.g. line after "Friday 31 March" header)
-* The cursor is placed at the end of that new line, ready to type "what's happening now".
-
-This plugin also provides two additional hotkeys
- * Ctrl+Shift+D: insert date link `[d: yyyy-mm-dd]` at current cursor postion. Like `Ctrl+d` but without a dialog first and the linked path starts with `:`.
- * Ctrl+Shift+Y: copy (yank) the path of the current page to the clipboard. nearly identical to the built in Ctrl+Shift+L, but does not paste as a relative link
-
-
 ## Install
-To install this plugin, place the "py" file at "$HOME/.local/share/zim/plugins", and [re]start Zim.
+Install this plugin like any zim plugin: place the `py` file in `$HOME/.local/share/zim/plugins` and [re]start Zim.
 
 ```
 svn export https://github.com/WillForan/zim-plugin-nowbutton/trunk/nowbutton.py ~/.local/share/zim/plugins/ 
 ```
+
+
+## Plugin
+
+* <kbd>Ctrl+Shift+E</kbd>
+   1. If the current day's journal page does not exist, it is created. **The Journal plugin must be enabled.**
+   1. The window is navigated to today's journal page.
+   1. The page's text has the a link to previous page and current time appended to it (e.g. `\n[[Page:IWas:Editting]] - @ `)
+      * if date page is week, text is placed after date header (e.g. line after `Friday 31 March` header)
+   1. The cursor is placed at the end of that new line, ready to type "what's happening now".
+
+* <kbd>Ctrl+Shift+D</kbd>
+  * insert date link `[d: yyyy-mm-dd]` at current cursor postion. Like <kbd>Ctrl+d</kbd> but without a dialog first and the linked path starts with `:`.
+* <kbd>Ctrl+Shift+Y</kbd>
+  * copy (yank) the path of the current page to the clipboard. nearly identical to the built in <kbd>Ctrl+Shift+L</kbd>, but does not paste as a relative link
+
+
+## Work Flow
+### date backlinking
+1. <kbd>Ctrl+J</kbd> jump to title or  <kbd>Ctrl+Shift+F</kbd> search all pages for some text
+1. jump to and edit edit page
+1. <kbd>Ctrl+Shift+E</kbd> to link current page back to the current day + jump to current date
+
+### date forward linking
+1. <kbd>Alt+d</kbd> to go to date page
+1. <kbd>Ctl+L</kbd> to insert link to page to edit
+1. go to page
+1. <kbd>Ctrl+Shift+D</kbd> to insert link to date and keep editing
 
 ## ToDo
 * use preferences
