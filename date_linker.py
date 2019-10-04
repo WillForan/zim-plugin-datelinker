@@ -99,7 +99,8 @@ class DateLinkerPageViewExtension(PageViewExtension):
         # page = self.pageview.notebook.get_path(path)
         # self.pageview.notebook.store_page(page)
         buffer = self.pageview.textview.get_buffer()
-        insert_text(buffer, text, end=find_date_heading(buffer))
+        insert_end = insert_text(buffer, text, end=find_date_heading(buffer))
+        buffer.place_cursor(insert_end)
 
         # # and finally... scroll the window all the way to the bottom.
         # self.pageview.scroll_cursor_on_screen()
@@ -148,8 +149,8 @@ def insert_text(buffer, text, end=None):
     pulled from inlinecalculator.py
     @param buffer: the C{gtk.TextBuffer}
     @param text: string or xml to insert
-    @param search_datehdr: bool flag to insert after (week journal view) date
-    @returns: a C{gtk.TextIter} for cursor at end of header or C{None}
+    @param end:  C{gtk.TextIter} to insert at
+    @returns: a C{gtk.TextIter} where end of inserted text is
     """
 
     # buffer = self.pageview.textview.get_buffer()
@@ -164,12 +165,19 @@ def insert_text(buffer, text, end=None):
         #  end.backward_visible_cursor_positions(1)
         #  buffer.place_cursor(end)
 
+    move_char = 0
     with buffer.user_action:
         logger.debug("%s is %s", text.__repr__(), type(text))
         if isinstance(text, str):
             buffer.insert(end, text)
+            move_char = len(text)
         else:
             buffer.insert_parsetree(end, text)
+	    raise Exception(text.text)
+            move_char = len(text.text)
+
+    end = end.forward_chars(move_char)  # todo: move_char segfault
+    return(end)
 
 
 def xml_link(path, linktxt, text=''):
