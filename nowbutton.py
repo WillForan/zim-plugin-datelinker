@@ -201,7 +201,7 @@ class MainWindowExtension(WindowExtension):
                 textBuffer = self.window.pageview.view.get_buffer()
                 itr = find_date_heading(textBuffer)
                 if itr is not None:
-                    el = get_link_and_text(curpagelink, curpagelink, ' - @\n')
+                    el = get_link_and_text(curpagelink, curpagelink, '\n')
                     textBuffer.insert_parsetree(itr, el)
                     textBuffer.place_cursor(itr)
                 else:
@@ -230,7 +230,7 @@ def get_link_and_text(path, linktxt, text=''):
     """
     xml = """<?xml version='1.0' encoding='utf-8'?>""" + \
           """<zim-tree partial="True">""" + \
-          '<link href=":%(path)s">%(disp)s</link>%(text)s </zim-tree>'
+          '<link href=":%(path)s">%(disp)s</link>%(text)s</zim-tree>'
     dispdict = {'path': path, 'disp': linktxt, 'text': text}
     zimtree = ParseTree().fromstring(xml % dispdict)
     return(zimtree)
