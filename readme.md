@@ -17,6 +17,8 @@ Zim will find `__init__.py` in the datelinker directory within plugins
 ## Description
 This plugin proves 3 keybindings for quickly linking and backlinking today's journal page.
 
+![screenshot](screenshot.png?raw=True)
+
 * <kbd>Ctrl+Shift+E</kbd> - link current page onto today's page
    1. The window is navigated to today's journal page.
    1. append e.g. `[[Page:IWas:Editting]] - ` to today's page.
