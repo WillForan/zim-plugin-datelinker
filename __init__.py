@@ -12,19 +12,15 @@ also see
 import re
 import logging
 import gettext
-import gtk
 
-from zim.plugins import PluginClass
+from zim.plugins import find_extension, PluginClass
 from zim.actions import action
 import zim.datetimetz as datetime
 from zim.gui.clipboard import Clipboard
-# from zim.datetimetz import dates_for_week, weekcalendar
-# from zim.notebook import Path
-# from zim.notebook.index import IndexNotFoundError
 
 from zim.gui.pageview import PageViewExtension, FIND_REGEX,\
     _is_heading_tag, ParseTree
-from zim.plugins.journal import JournalPlugin
+from zim.plugins.journal import JournalPageViewExtension
 
 # ## setup
 LOGGER = logging.getLogger('zim.plugins.date_linker')
@@ -57,7 +53,8 @@ class DateLinkerPageViewExtension(PageViewExtension):
         self.notebook = pageview.notebook
         hpm = self.plugin.preferences['hours_past_midnight']
         self.hour_delta = datetime.timedelta(hours=hpm)
-        self.journal = JournalPlugin()
+        # JournalPageViewExtension: go_page_today journal.plugin.path_from_date
+        self.journal = find_extension(self.pageview, JournalPageViewExtension)
 
         # TODO: fix this?
         # properties = self.plugin.notebook_properties(self.notebook)
@@ -68,7 +65,8 @@ class DateLinkerPageViewExtension(PageViewExtension):
         # early morning same day as late night
         # by default: if it's 4am, pretend it's midnight
         now = datetime.datetime.today() - self.hour_delta
-        path = self.journal.path_from_date(self.pageview.notebook, now.date())
+        path = self.journal.plugin.\
+            path_from_date(self.pageview.notebook, now.date())
         return path
 
     @action(_('AbsY_ank'), accelerator='<Control><Shift>Y', menuhints='go')
@@ -90,15 +88,13 @@ class DateLinkerPageViewExtension(PageViewExtension):
         buffer.insert_parsetree_at_cursor(datelink)
 
     @action(_('E_xplainNow'), accelerator='<Control><Shift>E', menuhints='go')
-    def go_page_today(self):
+    def explain_page_today(self):
         """ insert text on todays page
         modified from zim.plugins.journal.go_page_today """
         curpage = ":" + self.pageview.page.name
 
-        path = self.current_date_page()
-
-        # what if page doesn't exist?
-        self.navigation.open_page(path)
+        # use journal plugin to do it's thing
+        self.journal.go_page_today()
 
         # what to insert
         fmt = self.plugin.preferences['explain_fmt']

@@ -1,32 +1,30 @@
 # zim-plugin-DateLinker
 ## Overview
-Quickly timestamp, link, and backlink [Zim wiki](http://zim-wiki.org/) pages and the journal with a hotkey.
+Quickly timestamp, link, and backlink [Zim wiki](http://zim-wiki.org/)(>= .7) pages and the journal with a hotkey. Also in emacs within [zw-mode](https://github.com/WillForan/zw-mode)
 
-Heavily inspired by [now-button](https://github.com/Osndok/zim-plugin-nowbutton).
+Heavily inspired by [now-button](https://github.com/Osndok/zim-plugin-nowbutton). 
+
 
 ## Install
 ```
 git clone https://github.com/WillForan/zim-plugin-datelinker ~/.local/share/zim/plugins/datelinker
 ```
 
-  - Put this repo within the local zim plugin directory (`$XDG_DATA_HOME/zim/plugins/`).
+  1. Put this repo within the local zim plugin directory (`$XDG_DATA_HOME/zim/plugins/`).
 Zim will find `__init__.py` in the datelinker directory within plugins
-  - You will need to restart zim and enable the plugin from the list under `Edit -> Preferences -> Plugins`
+  1. You will need to restart zim and enable the plugin from the list under `Edit -> Preferences -> Plugins`
 
 ## Description
 This plugin proves 3 keybindings for quickly linking and backlinking today's journal page.
 
 * <kbd>Ctrl+Shift+E</kbd> - link current page onto today's page
-   1. If the current day's journal page does not exist, it is created. **The Journal plugin must be enabled.**
    1. The window is navigated to today's journal page.
-   1. The page's text has a link to previous page and current time appended to it (e.g. `\n[[Page:IWas:Editting]] - @ `)
+   1. append e.g. `[[Page:IWas:Editting]] - ` to today's page.
       * if date page is week, text is placed after date header (e.g. line after `Friday 31 March` header)
-   1. The cursor is placed at the end of that new line, ready to type "what's happening now".
 * <kbd>Ctrl+Shift+D</kbd> - link today's page to current page
   * insert date link `[d: yyyy-mm-dd]` at current cursor position. Like <kbd>Ctrl+d</kbd> but without a dialog first and the linked path starts with `:`.
-* <kbd>Ctrl+Shift+Y</kbd> - absolute path to clipboard
-  * differs from <kbd>Ctrl+L</kbd> in only that the copied path is absolute (starts with `:`)
-  * copy (yank) the path of the current page to the clipboard. nearly identical to the built in <kbd>Ctrl+Shift+L</kbd>, but does not paste as a relative link
+* <kbd>Ctrl+Shift+Y</kbd> - page's absolute path to clipboard
+  * differs from <kbd>Ctrl+Shift+L</kbd> in only that the copied path is absolute (starts with `:`)
 
 
 ## Work Flow
