@@ -15,7 +15,7 @@ Zim will find `__init__.py` in the datelinker directory within plugins
   1. You will need to restart zim and enable the plugin from the list under `Edit -> Preferences -> Plugins`
 
 ## Description
-This plugin proves 3 keybindings for quickly linking and backlinking today's journal page.
+This plugin provides 3 keybindings for quickly linking and backlinking today's journal page.
 
 ![screenshot](screenshot.png?raw=True)
 
